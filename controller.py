@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+#This script is originally by Maxwell Budd (TechBotBuilder).
+#Please credit me as one or the other if you find this work helpful or derive code from it.
 
 ##this script must be run as sudo for GPIO to work
 import RPi.GPIO as GPIO
