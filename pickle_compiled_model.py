@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+#This script is originally by Maxwell Budd (TechBotBuilder).
+#Please credit me as one or the other if you find this work helpful or derive code from it.
+
 import sys
 sys.setrecursionlimit(10000)
 
