@@ -20,6 +20,6 @@ sudo HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial CC=hdcc pip3 install h5py
 
 cd ~
 mkdir avc && cd avc
-wget http://techbotbuilder.com/avcnn/code/raspi_code.zip
+wget https://github.com/TechBotBuilder/avcnn/archive/master.zip
 unzip raspi_code.zip
 rm raspi_code.zip
