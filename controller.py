@@ -283,11 +283,10 @@ def main():
             #wait the remainder of 1 second, so each cycle takes 1 second total.
             time.sleep(max(0, startTimeStep + 1 - time.time()))
         #f.close()
+        robot.cleanup()
+        call("sudo shutdown -h now", shell=True)
     except KeyboardInterrupt:
-        pass
-    robot.cleanup()
-    call("sudo shutdown -h now", shell=True)
-
+        robot.cleanup()
 
 if __name__ == "__main__":
     main()
