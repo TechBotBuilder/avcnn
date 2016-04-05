@@ -32,7 +32,7 @@ class GPSInterface:
     def parseRaw(self, data):
             msg = pynmea2.parse(data)
             if not self.hasfix:
-                #if havn't gotten a fix yet, check to see if we do now.
+                #if haven't gotten a fix yet, check to see if we do now.
                 self.hasfix = int(msg.gps_qual) > 0
             if self.hasfix:
                 self.timestamp = msg.timestamp
@@ -72,6 +72,7 @@ class GPSMap:
         return self.internalstate
 
 class PWMInterface:
+    #class to control PWM items = servo and motor.
     def __init__(self):
         #Pi-blaster listens for file writes to control pwm
         #it uses GPIO numbers instead of P1 header pin numbers.
@@ -83,7 +84,7 @@ class PWMInterface:
         self.setMotor(self.motorOffValue)
     def setPin(self, pin, value):
         with open('/dev/pi-blaster', 'w') as f:
-            f.write(str(self.servoPin) + "=" + str(float(value)) + "\n")
+            f.write(str(pin) + "=" + str(float(value)) + "\n")
     def setServo(self, value):
         self.setPin(self.servoPin, value)
     def setMotor(self, value):
@@ -150,7 +151,7 @@ class UltrasonicUpdater(Thread):
         self.running = True
     def setInterfaces(self, sensorInterfaces):
         #sensorInterfaces should be a list of UltrasonicSensor, in order of updates.
-        #maximum of 12 to guarantee all are updated every second
+        #maximum of 12 to guarantee all are updated every second with maxdistance=4.5m
         self.sensorInterfaces = sensorInterfaces
     def run(self):
         while self.running:
@@ -170,6 +171,7 @@ class PhysicalReactor:
         GPIO.setmode(GPIO.BOARD)#use counting scheme, just from 1 to 26
         #NOT PIblaster counting scheme.
         #so this DOES use counting scheme of 2 at corner, goes up by 1
+        #see https://pinout.xyz for pin schemes.
         self.leftUltra = UltrasonicSensor(19, 22)
         self.centerUltra = UltrasonicSensor(21, 24)
         self.rightUltra = UltrasonicSensor(23, 26)
@@ -182,13 +184,13 @@ class PhysicalReactor:
         self.ultraUpdater = UltrasonicUpdater()
         self.ultraUpdater.setInterfaces([self.leftUltra, self.centerUltra, self.rightUltra])
         self.ultraUpdater.start()
-        #8 actions, 0-7.#0 forward, 1 forwardleft, 2 forwardright, 3 backward, 4 backwardleft, 5 backwardright, 6 stop/brake, 7 none
-        leftval = 0.15
-        rightval = 0.11
-        centerval = self.driving.servoCenterValue
+        leftval = 0.15 #these will vary from servo to servo and motor to motor.
+        rightval = 0.11 #they should be somewhere from .1 to .2 -> 10-20ms PWM pulses.
         forwardval = 0.2
         reverseval = 0.1
+        centerval = self.driving.servoCenterValue
         noneval = self.driving.motorOffValue
+        #8 actions, 0-7.#0 forward, 1 forwardleft, 2 forwardright, 3 backward, 4 backwardleft, 5 backwardright, 6 stop/brake, 7 none
         self.servoActionValues = [centerval, leftval, rightval, leftval, centerval, rightval, centerval, centerval]
         self.motorActionValues = [forwardval, forwardval, forwardval, reverseval, reverseval, reverseval, noneval, noneval]
         self.paction = 7
@@ -204,9 +206,9 @@ class PhysicalReactor:
     def cleanup(self):
         self.driving.releaseAll()
         self.gpsUpdater.running = False #tell the GPS Updating thread to shut down
-        self.ultraUpdater.running = False
+        self.ultraUpdater.running = False #same for Ultrasonic monitoring thread
         self.gpsUpdater.join() #wait for the GPS Updating thread to finish what it is doing
-        self.ultraUpdater.join()
+        self.ultraUpdater.join() #likewise for ultrasonic modules
         GPIO.cleanup()
 
 
@@ -216,24 +218,32 @@ from keras.layers import Activation, LSTM, TimeDistributedDense
 import dill
 class Network:
     def __init__(self):
+        #commented out section below takes about 7 minutes (stateful RNN) to 12 minutes (stateless)
+        #for Theano to compile when Raspberry Pi on Turbo overclock
         """self.model = Sequential()
         self.model.add(LSTM(input_dim=13, output_dim=300, return_sequences=True, batch_input_shape=(1, 1, 13), stateful=True))
         self.model.add(TimeDistributedDense(input_dim=300, output_dim=8))
         self.model.add(Activation("linear"))
         self.model.load_weights('weights.h5')
         self.model.compile(loss=self.mse_rl, optimizer="sgd")
-        #self.pstates = np.zeros((0,13))"""
+        #self.pstates = np.zeros((0,13))#used for stateless RNN"""
+        #Instead, reading model from file takes about 2.5 minutes.
         self.model = dill.load(open("model.dill", "rb"))
     def predict(self, state):
-        #self.pstates = np.concatenate((self.pstates, state))
+        #self.pstates = np.concatenate((self.pstates, state)) #these two lines also used for stateless RNN
         #return self.model.predict_on_batch(self.pstates.reshape(1, self.pstates.shape[0], self.pstates.shape[1]))[0][0, -1, :] * 300
         return self.model.predict_on_batch(state.reshape(1, state.shape[0], state.shape[1]))[0][0, -1, :] * 300
     @staticmethod
     def mse_rl(y_true, y_pred):
+        #We don't really need this here unless you compile your model instead of pickling it.
+        #this 
         care = T.nonzero(T.eq(T.isnan(y_true),0))
         return T.mean((y_pred[care] - y_true[care]) ** 2).sum()
     @staticmethod
     def e_greedy(values, epsilon = 0.0):
+        #a "policy": tells the robot how to select its next action based on how good it thinks each action is.
+        #e_greedy takes the best action (1-epsilon)*100% of the time, and a purely random action epsilon*100% of the time.
+        #epsilon=0 means it always takes what it thinks is the best action
         r = np.random.rand()
         if r < epsilon:
             ouraction = np.random.randint(0, values.size)
@@ -242,47 +252,39 @@ class Network:
         return ouraction, values[ouraction]
 
 def main():
-    robot = PhysicalReactor()#initializes sensors and actuators: left, right, center Ultrasonics, gps, servo, and motor
-    #print("1 at "+str(time.time()))
+    robot = PhysicalReactor() #initializes sensors and actuators: left, right, center Ultrasonics, gps, servo, and motor
     try:
         brain = Network()
-        #print("2 at "+str(time.time()))
         policy = Network.e_greedy
         #wait for everything to get setup.
         readyLedPin = 15
         GPIO.setup(readyLedPin, GPIO.OUT)
-        #print("3 at "+str(time.time()))
         while not robot.gps.hasfix:
             GPIO.output(readyLedPin, GPIO.LOW)
             time.sleep(0.85)
             GPIO.output(readyLedPin, GPIO.HIGH)
             time.sleep(0.15)
         #turn on led to show we are ready to go.
-        #print("4 at "+str(time.time()))
         GPIO.output(readyLedPin, GPIO.HIGH)
         #wait for button press to start a round
         startswitchpin = 16
         GPIO.setup(startswitchpin, GPIO.IN, pull_up_down=GPIO.PUD_UP)#normally connected to +3 v
-        GPIO.wait_for_edge(startswitchpin, GPIO.FALLING)#wait til it's connected to ground
+        GPIO.wait_for_edge(startswitchpin, GPIO.FALLING)#wait til it's connected to ground (switch closed)
         ledstate = False
-        stoptime = time.time() + 5 * 60 #after 5 minutes, let's just shut down
+        #each run at the NRC has a time limit of 5 minutes. So,
+        stoptime = time.time() + 5 * 60 #after 5 minutes, let's just shut down.
         #also shut down if someone flips the switch back to the off position.
         startTimeStep = time.time()
-        #f = open("stateful_times.txt", "w")
         while startTimeStep < stoptime and 0==GPIO.input(startswitchpin):
             startTimeStep = time.time()
-            #f.write(str(startTimeStep)+"\n")
             GPIO.output(readyLedPin, ledstate)
             ledstate = not ledstate
             state = robot.getState()
             values = brain.predict(state)
             action, value = policy(values)
-            #if ledstate:
-            #    print(value)
             robot.doAction(action)
             #wait the remainder of 1 second, so each cycle takes 1 second total.
             time.sleep(max(0, startTimeStep + 1 - time.time()))
-        #f.close()
         robot.cleanup()
         call("sudo shutdown -h now", shell=True)
     except KeyboardInterrupt:
