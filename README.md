@@ -1,8 +1,8 @@
 # avcnn
-Allows raspberry pi to use a neural network to control an autonomous robot.
+Use a raspberry pi to run a (possibly recurrent) neural network, which can control an autonomous robot.
 
-This project originally developed for the National Robotics Challenge 2016 (thenrc.org) by Maxwell Budd = TechBotBuilder.
-Please credit me if you find this work helpful or derive code from it.
+This project originally developed for the Autonomous Vehicle Competition at the National Robotics Challenge 2016 (thenrc.org).
+Please link to this Github or cite me in your own projects if you find this work helpful or derive code from it.
 
 ## Setup
 First you should train a neural network using Keras on a simulator or using some other library.
