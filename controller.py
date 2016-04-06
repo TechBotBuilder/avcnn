@@ -17,7 +17,7 @@ class GPSInterface:
     def __init__(self, positioner):
         #initialize serial connection with GPS
         call("stty -F /dev/ttyAMA0 raw 9600 cs8 clocal -cstopb", shell=True)
-        self.connection = serial.Serial("/dev/ttyAMA0", 9600, timeout=0.5)
+        self.connection = serial.Serial("/dev/ttyAMA0", 9600, timeout=0.1)
         #setup some data variables - positions are at the starting pt on the course
         self.latitude = 40.604456
         self.longitude = -83.124911
@@ -25,8 +25,8 @@ class GPSInterface:
         self.positioner = positioner
         self.hasfix = False
     def update(self):
-        data = self.connection.readline()
-        if data.find(b'GGA') > 0:
+        data = self.connection.readline().decode() #readline() in 3 enforces binary data, .decode() makes it a str.
+        if data.find('GGA') > 0:
             self.parseRaw(data)
             self.positioner.update([self.longitude, self.latitude])
     def parseRaw(self, data):
@@ -228,7 +228,7 @@ class Network:
         self.model.compile(loss=self.mse_rl, optimizer="sgd")
         #self.pstates = np.zeros((0,13))#used for stateless RNN"""
         #Instead, reading model from file takes about 2.5 minutes.
-        self.model = dill.load(open("model.dill", "rb"))
+        self.model = dill.load(open("/home/pi/avc/model.dill", "rb"))
     def predict(self, state):
         #self.pstates = np.concatenate((self.pstates, state)) #these two lines also used for stateless RNN
         #return self.model.predict_on_batch(self.pstates.reshape(1, self.pstates.shape[0], self.pstates.shape[1]))[0][0, -1, :] * 300
