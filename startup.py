@@ -13,7 +13,9 @@ GPIO.setmode(GPIO.BOARD)
 startswitchpin = 16
 GPIO.setup(startswitchpin, GPIO.IN, pull_up_down=GPIO.PUD_UP)#normally connected to +3 v
 if GPIO.input(startswitchpin) == 1:
-    #if the switch is not closed
+    #if the switch is not closed do the program launch sequence
+    from time import sleep
+    sleep(10) #give the pi a moment to let other daemons start (like pi-blaster)
     from controller import main
     main()#run the program
 #otherwise, if someone has closed the switch->0v, just do nothing
