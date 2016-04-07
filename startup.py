@@ -14,6 +14,9 @@ startswitchpin = 16
 GPIO.setup(startswitchpin, GPIO.IN, pull_up_down=GPIO.PUD_UP)#normally connected to +3 v
 if GPIO.input(startswitchpin) == 1:
     #if the switch is not closed do the program launch sequence
+    #run the pi-blaster daemon
+    from subprocess import call
+    call("sudo /home/pi/piblaster/pi-blaster-master/pi-blaster", shell=True)
     from time import sleep
     sleep(10) #give the pi a moment to let other daemons start (like pi-blaster)
     from controller import main
