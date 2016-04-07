@@ -78,7 +78,7 @@ class PWMInterface:
         #it uses GPIO numbers instead of P1 header pin numbers.
         self.servoPin = 18
         self.motorPin = 17
-        self.servoCenterValue = 0.13
+        self.servoCenterValue = 0.165
         self.motorOffValue = 0.15
         self.setServo(self.servoCenterValue)
         self.setMotor(self.motorOffValue)
@@ -184,15 +184,15 @@ class PhysicalReactor:
         self.ultraUpdater = UltrasonicUpdater()
         self.ultraUpdater.setInterfaces([self.leftUltra, self.centerUltra, self.rightUltra])
         self.ultraUpdater.start()
-        leftval = 0.15 #these will vary from servo to servo and motor to motor.
-        rightval = 0.11 #they should be somewhere from .1 to .2 -> 10-20ms PWM pulses.
-        forwardval = 0.2
-        reverseval = 0.1
+        leftval = 0.19 #these will vary from servo to servo and motor to motor.
+        rightval = 0.14 #they should be somewhere from .1 to .2 -> 10-20ms PWM pulses.
+        forwardval = 0.1
+        reverseval = 0.2
         centerval = self.driving.servoCenterValue
         noneval = self.driving.motorOffValue
         #8 actions, 0-7.#0 forward, 1 forwardleft, 2 forwardright, 3 backward, 4 backwardleft, 5 backwardright, 6 stop/brake, 7 none
-        self.servoActionValues = [centerval, leftval, rightval, leftval, centerval, rightval, centerval, centerval]
-        self.motorActionValues = [forwardval, forwardval, forwardval, reverseval, reverseval, reverseval, noneval, noneval]
+        self.servoActionValues = [centerval, leftval, rightval, centerval, leftval, rightval, centerval, centerval]
+        self.motorActionValues = [forwardval, forwardval, forwardval, reverseval, reverseval, reverseval, 0, noneval]#0->braking
         self.paction = 7
     def getDistances(self):
         return [self.leftUltra.distance, self.rightUltra.distance, self.centerUltra.distance]
