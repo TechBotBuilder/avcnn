@@ -9,7 +9,6 @@ rm master.zip
 cd pi-blaster-master
 ./autogen.sh
 ./configure && make
-sudo make install
 
 cd ~
 sudo apt-get install python3-scipy
