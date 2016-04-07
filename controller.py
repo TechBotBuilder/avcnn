@@ -186,8 +186,8 @@ class PhysicalReactor:
         self.ultraUpdater.start()
         leftval = 0.19 #these will vary from servo to servo and motor to motor.
         rightval = 0.14 #they should be somewhere from .1 to .2 -> 10-20ms PWM pulses.
-        forwardval = 0.1
-        reverseval = 0.2
+        forwardval = 0.125 #.1 = full forward
+        reverseval = 0.175 #.2 = full reverse
         centerval = self.driving.servoCenterValue
         noneval = self.driving.motorOffValue
         #8 actions, 0-7.#0 forward, 1 forwardleft, 2 forwardright, 3 backward, 4 backwardleft, 5 backwardright, 6 stop/brake, 7 none
