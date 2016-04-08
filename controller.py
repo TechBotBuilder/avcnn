@@ -39,8 +39,8 @@ class GPSInterface:
                 self.hasfix = int(msg.gps_qual) > 0
             if self.hasfix:
                 self.timestamp = msg.timestamp
-                self.latitude = msg.latitude
-                self.longitude = msg.longitude
+                self.latitude = float(msg.latitude)
+                self.longitude = float(msg.longitude)
 #and GPSUpdater is adapted from http://www.danmandle.com/blog/getting-gpsd-to-work-with-python/
 class GPSUpdater(Thread):
     def __init__(self):
