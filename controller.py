@@ -25,10 +25,13 @@ class GPSInterface:
         self.positioner = positioner
         self.hasfix = False
     def update(self):
-        data = self.connection.readline().decode() #readline() in 3 enforces binary data, .decode() makes it a str.
-        if data.find('GGA') > 0:
-            self.parseRaw(data)
-            self.positioner.update([self.longitude, self.latitude])
+        try:
+            data = self.connection.readline().decode() #readline() in 3 enforces binary data, .decode() makes it a str.
+            if data.find('GGA') > 0:
+                self.parseRaw(data)
+                self.positioner.update([self.longitude, self.latitude])
+        except UnicodeDecodeError:
+            pass
     def parseRaw(self, data):
             msg = pynmea2.parse(data)
             if not self.hasfix:
@@ -36,8 +39,8 @@ class GPSInterface:
                 self.hasfix = int(msg.gps_qual) > 0
             if self.hasfix:
                 self.timestamp = msg.timestamp
-                self.latitude = msg.lat
-                self.longitude = msg.lon
+                self.latitude = msg.latitude
+                self.longitude = msg.longitude
 #and GPSUpdater is adapted from http://www.danmandle.com/blog/getting-gpsd-to-work-with-python/
 class GPSUpdater(Thread):
     def __init__(self):
@@ -78,7 +81,7 @@ class PWMInterface:
         #it uses GPIO numbers instead of P1 header pin numbers.
         self.servoPin = 18
         self.motorPin = 17
-        self.servoCenterValue = 0.165
+        self.servoCenterValue = 0.162
         self.motorOffValue = 0.15
         self.setServo(self.servoCenterValue)
         self.setMotor(self.motorOffValue)
