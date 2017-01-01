@@ -1,0 +1,2 @@
+#constants.py
+SCALINGFACTOR = 14.59813
